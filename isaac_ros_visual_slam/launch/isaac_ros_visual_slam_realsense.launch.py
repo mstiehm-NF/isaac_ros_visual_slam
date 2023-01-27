@@ -28,20 +28,19 @@ def generate_launch_description():
         package='realsense2_camera',
         executable='realsense2_camera_node',
         parameters=[{
-                'infra_height': 480,
-                'infra_width': 640,
+                'enable_infra1': True,
+                'enable_infra2': True,
                 'enable_color': True,
                 'enable_depth': True,
-                'stereo_module.emitter_enabled': False,
-                'infra_fps': 15.0,
+                'depth_module.emitter_enabled': 0,
                 'unite_imu_method':1,
                 'enable_sync':True,
                 'pointcloud.enable':False,
-                'enable_infra1':True,
-                'enable_infra2':True,
-                'depth_module.profile':'640,480,15',
-                'rgb_camera.profile':'640,480,15'
-        }]
+                'align_depth.enable': True,
+                'pointcloud.ordered_pc': False,
+                'depth_module.profile':'640x360x90',
+                'rgb_camera.profile': '1280x720x30'
+        }],
     )
 
     visual_slam_node = ComposableNode(
@@ -51,10 +50,10 @@ def generate_launch_description():
         parameters=[{
                 'enable_rectified_pose': True,
                 'denoise_input_images': True,
-                'rectified_images': False,
+                'rectified_images': True,
                 'enable_debug_mode': False,
                 'debug_dump_path': '/tmp/elbrus',
-                'enable_slam_visualization': False,
+                'enable_slam_visualization': True,
                 'enable_landmarks_view': False,
                 'enable_observations_view': False,
                 'enable_localization_n_mapping': True,
@@ -64,9 +63,12 @@ def generate_launch_description():
                 'base_frame': 'camera_link',
                 'input_left_camera_frame': '',
                 'input_right_camera_frame': '',
-                'path_max_size': 1000,
-                'msg_filter_queue_size': 1000,
+                'path_max_size': 5000,
+                'msg_filter_queue_size': 5000,
+                'publish_odom_to_base_tf': True,
+                'publish_map_to_odom_tf': True,
                 'input_imu_frame' : 'camera_imu_frame',
+
                     }],
         remappings=[('stereo_camera/left/image', 'camera/infra1/image_rect_raw'),
                     ('stereo_camera/left/camera_info', 'camera/infra1/camera_info'),
