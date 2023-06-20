@@ -1,38 +1,52 @@
 # Isaac ROS Visual SLAM
 
-<div align="center"><img src="resources/elbrus_ros_3.gif" width="400px"/></div>
+<div align="center"><img src="resources/cuvslam_ros_3.gif" width="400px"/></div>
 
 ---
+
 ## Webinar Available
+
 Learn how to use this package by watching our on-demand webinar: [Pinpoint, 250 fps, ROS 2 Localization with vSLAM on Jetson](https://gateway.on24.com/wcc/experience/elitenvidiabrill/1407606/3998202/isaac-ros-webinar-series)
 
 ---
 
 ## Overview
 
-This repository provides a ROS2 package that performs stereo visual simultaneous localization and mapping (VSLAM) and estimates stereo visual inertial odometry using the [Isaac Elbrus](https://docs.nvidia.com/isaac/packages/visual_slam/doc/elbrus_visual_slam.html) GPU-accelerated library. It takes in a time-synced pair of stereo images (grayscale) along with respective camera intrinsics to publish the current pose of the camera relative to its start pose.
+This repository provides a high-performance, best-in-class ROS 2 package for VSLAM (visual simultaneous localization and mapping).  This package uses a stereo camera with an IMU to estimate odometry as an input to navigation. It is GPU accelerated to provide real-time, low-latency results in a robotics application. VSLAM provides an additional odometry source for mobile robots (ground based) and can be the primary odometry source for drones.
 
-Elbrus is based on two core technologies: Visual Odometry (VO) and Simultaneous Localization and Mapping (SLAM).
+VSLAM provides a method for visually estimating the position of a robot relative to its start position, known as VO (visual odometry). This is particularly useful in environments where GPS is not available (such as indoors) or intermittent (such as urban locations with structures blocking line of sight to GPS satellites). This method is designed to use left and right stereo camera frames and an IMU (inertial measurement unit) as input. It uses input stereo image pairs to find matching key points in the left and right images; using the baseline between the left and right camera, it can estimate the distance to the key point. Using two consecutive input stereo image pairs, VSLAM can track the 3D motion of key points between the two consecutive images to estimate the 3D motion of the camera--which is then used to compute odometry as an output to navigation. Compared to the classic approach to VSLAM, this method uses GPU acceleration to find and match more key points in real-time, with fine tuning to minimize overall reprojection error.
 
-Visual SLAM is a method for estimating a camera position relative to its start position. This method has an iterative nature. At each iteration, it considers two consequential input frames (stereo pairs). On both the frames, it finds a set of keypoints. Matching keypoints in these two sets gives the ability to estimate the transition and relative rotation of the camera between frames.
+Key points depend on distinctive features in the left and right camera image that can be repeatedly detected with changes in size, orientation, perspective, lighting, and image noise. In some instances, the number of key points may be limited or entirely absent; for example, if the camera field of view is only looking at a large solid colored wall, no key points may be detected. If there are insufficient key points, this module uses motion sensed with the IMU to provide a sensor for motion, which, when measured, can provide an estimate for odometry. This method, known as VIO (visual-inertial odometry), improves estimation performance when there is a lack of distinctive features in the scene to track motion visually.
 
-Simultaneous Localization and Mapping is a method built on top of the VO predictions. It aims to improve the quality of VO estimations by leveraging the knowledge of previously seen parts of a trajectory. It detects if the current scene was seen in the past (i.e. a loop in camera movement) and runs an additional optimization procedure to tune previously obtained poses.
+SLAM (simultaneous localization and mapping) is built on top of VIO, creating a map of key points that can be used to determine if an area is previously seen. When VSLAM determines that an area is previously seen, it reduces uncertainty in the map estimate, which is known as loop closure. VSLAM uses a statistical approach to loop closure that is more compute efficient to provide a real time solution, improving convergence in loop closure.
 
-Along with visual data, Elbrus can optionally use Inertial Measurement Unit (IMU) measurements. It automatically switches to IMU when VO is unable to estimate a pose; for example, when there is dark lighting or long solid featureless surfaces in front of a camera. Elbrus delivers real-time tracking performance: more than 60 FPS for VGA resolution. For the KITTI benchmark, the algorithm achieves a drift of ~1% in localization and an orientation error of 0.003 degrees per meter of motion. Elbrus allows for robust tracking in various environments and with different use cases: indoor, outdoor, aerial, HMD, automotive, and robotics.
+<div align="center"><img src="resources/vslam_odometry_nav2_diagram.png" width="800px"/></div>
 
-To learn more about Elbrus SLAM click [here](docs/elbrus-slam.md).
+There are multiple methods for estimating odometry as an input to navigation. None of these methods are perfect; each has limitations  because of systematic flaws in the sensor providing measured observations, such as missing LIDAR returns absorbed by black surfaces, inaccurate wheel ticks when the wheel slips on the ground, or a lack of distinctive features in a scene limiting key points in a camera image. A practical approach to tracking odometry is to use multiple sensors with diverse methods so that systemic issues with one method can be compensated for by another method. With three separate estimates of odometry, failures in a single method can be detected, allowing for fusion of the multiple methods into a single higher quality result. VSLAM provides a vision- and IMU-based solution to estimating odometry that is different from the common practice of using LIDAR and wheel odometry. VSLAM can even be used to improve diversity, with multiple stereo cameras positioned in different directions to provide multiple, concurrent visual estimates of odometry.
+
+To learn more about VSLAM, refer to the [cuVSLAM SLAM](docs/cuvslam.md) documentation.
+
+## Accuracy
+
+VSLAM is a best-in-class package with the lowest translation and rotational error as measured on KITTI [Visual Odometry / SLAM Evaluation 2012](https://www.cvlibs.net/datasets/kitti/eval_odometry.php) for real-time applications.  
+
+| Method                                            | Runtime | Translation | Rotation     | Platform                  |
+| ------------------------------------------------- | ------- | ----------- | ------------ | ------------------------- |
+| [VSLAM](docs/cuvslam.md)                          | 0.007s  | 0.94%       | 0.0019 deg/m | Jetson AGX Xavier aarch64 |
+| [ORB-SLAM2](https://github.com/raulmur/ORB_SLAM2) | 0.06s   | 1.15%       | 0.0027 deg/m | 2 cores @ >3.5 Ghz x86_64 |
+
+In addition to results from standard benchmarks, we test loop closure for VSLAM on sequences of over 1000 meters, with coverage for indoor and outdoor scenes.
 
 ## Performance
 
-The following are the benchmark performance results of the prepared pipelines in this package, by supported platform:
+The following table summarizes the per-platform performance statistics of sample graphs that use this package, with links included to the full benchmark output. These benchmark configurations are taken from the [Isaac ROS Benchmark](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_benchmark#list-of-isaac-ros-benchmarks) collection, based on the [`ros2_benchmark`](https://github.com/NVIDIA-ISAAC-ROS/ros2_benchmark) framework.
 
-| Pipeline | AGX Orin           | Orin Nano         | x86_64 w/ RTX 3060 Ti |
-| -------- | ------------------ | ----------------- | --------------------- |
-| VSLAM    | 250 fps <br> 3.1ms | 105 fps <br> 10ms | 265 fps <br> 5.2ms    |
-
-These data have been collected per the methodology described [here](https://github.com/NVIDIA-ISAAC-ROS/.github/blob/main/profile/performance-summary.md#methodology).
+| Sample Graph                                                                                                                         | Input Size | AGX Orin                                                                                                                                       | Orin NX                                                                                                                                       | Orin Nano 8GB                                                                                                                                   | x86_64 w/ RTX 4060 Ti                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Visual SLAM Node](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_benchmark/blob/main/scripts//isaac_ros_visual_slam_node.py) | 720p       | [232 fps](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_benchmark/blob/main/results/isaac_ros_visual_slam_node-agx_orin.json)<br>43 ms | [129 fps](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_benchmark/blob/main/results/isaac_ros_visual_slam_node-orin_nx.json)<br>62 ms | [116 fps](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_benchmark/blob/main/results/isaac_ros_visual_slam_node-orin_nano.json)<br>81 ms | [386 fps](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_benchmark/blob/main/results/isaac_ros_visual_slam_node-nuc_4060ti.json)<br>39 ms |
 
 ## Commercial Support & Source Access
+
 For commercial support and access to source code, please [contact NVIDIA](https://developer.nvidia.com/isaac-platform-contact-us-form).
 
 ## Table of Contents
@@ -40,6 +54,7 @@ For commercial support and access to source code, please [contact NVIDIA](https:
 - [Isaac ROS Visual SLAM](#isaac-ros-visual-slam)
   - [Webinar Available](#webinar-available)
   - [Overview](#overview)
+  - [Accuracy](#accuracy)
   - [Performance](#performance)
   - [Commercial Support \& Source Access](#commercial-support--source-access)
   - [Table of Contents](#table-of-contents)
@@ -66,24 +81,24 @@ For commercial support and access to source code, please [contact NVIDIA](https:
 
 ## Latest Update
 
-Update 2022-10-19: Updated OSS licensing
+Update 2022-05-25: cuVSLAM 11 with improved quality.
 
 ## Supported Platforms
 
-This package is designed and tested to be compatible with ROS2 Humble running on [Jetson](https://developer.nvidia.com/embedded-computing) or an x86_64 system with an NVIDIA GPU.
+This package is designed and tested to be compatible with ROS 2 Humble running on [Jetson](https://developer.nvidia.com/embedded-computing) or an x86_64 system with an NVIDIA GPU.
 
-> **Note**: Versions of ROS2 earlier than Humble are **not** supported. This package depends on specific ROS2 implementation features that were only introduced beginning with the Humble release.
+> **Note**: Versions of ROS 2 earlier than Humble are **not** supported. This package depends on specific ROS 2 implementation features that were only introduced beginning with the Humble release.
 
-| Platform | Hardware                                                                                                                                                                                                 | Software                                                                                                             | Notes                                                                                                                                                                                   |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Jetson   | [Jetson Orin](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/) <br> [Jetson Xavier](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-agx-xavier/) | [JetPack 5.0.2](https://developer.nvidia.com/embedded/jetpack)                                                       | For best performance, ensure that [power settings](https://docs.nvidia.com/jetson/archives/r34.1/DeveloperGuide/text/SD/PlatformPowerAndPerformance.html) are configured appropriately. |
-| x86_64   | NVIDIA GPU                                                                                                                                                                                               | [Ubuntu 20.04+](https://releases.ubuntu.com/20.04/) <br> [CUDA 11.6.1+](https://developer.nvidia.com/cuda-downloads) |
+| Platform | Hardware                                                                                                                                                                                                 | Software                                                                                                           | Notes                                                                                                                                                                                   |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jetson   | [Jetson Orin](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/) <br> [Jetson Xavier](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-agx-xavier/) | [JetPack 5.1.1](https://developer.nvidia.com/embedded/jetpack)                                                     | For best performance, ensure that [power settings](https://docs.nvidia.com/jetson/archives/r34.1/DeveloperGuide/text/SD/PlatformPowerAndPerformance.html) are configured appropriately. |
+| x86_64   | NVIDIA GPU                                                                                                                                                                                               | [Ubuntu 20.04+](https://releases.ubuntu.com/20.04/) <br> [CUDA 11.8+](https://developer.nvidia.com/cuda-downloads) |
 
 ### Docker
 
 To simplify development, we strongly recommend leveraging the Isaac ROS Dev Docker images by following [these steps](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common/blob/main/docs/dev-env-setup.md). This will streamline your development environment setup with the correct versions of dependencies on both Jetson and x86_64 platforms.
 
-> **Note:** All Isaac ROS Quickstarts, tutorials, and examples have been designed with the Isaac ROS Docker images as a prerequisite.
+> **Note**: All Isaac ROS Quickstarts, tutorials, and examples have been designed with the Isaac ROS Docker images as a prerequisite.
 
 ## Coordinate Frames
 
@@ -98,40 +113,27 @@ This section describes the coordinate frames that are involved in the `VisualSla
 
 ## Quickstart
 
-1. Set up your development environment by following the instructions [here](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common/blob/main/docs/dev-env-setup.md).  
-2. Clone this repository and its dependencies under `~/workspaces/isaac_ros-dev/src`.
+1. Set up your development environment by following the instructions [here](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common/blob/main/docs/dev-env-setup.md).
+
+    > Note: `${ISAAC_ROS_WS}` is defined to point to either `/ssd/workspaces/isaac_ros-dev/` or `~/workspaces/isaac_ros-dev/`.
+
+2. Clone this repository and its dependencies under `${ISAAC_ROS_WS}/src`.
 
     ```bash
-    cd ~/workspaces/isaac_ros-dev/src
-    ```
-
-    ```bash
+    cd ${ISAAC_ROS_WS}/src
     git clone https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_visual_slam
-    ```
-
-      ```bash
     git clone https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common
-    ```
-
-    ```bash
     git clone https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_nitros
     ```
 
-3. Pull down a ROS Bag of sample data:
+3. \[Terminal 1\] Launch the Docker container
 
     ```bash
-    cd ~/workspaces/isaac_ros-dev/src/isaac_ros_visual_slam && \ 
-      git lfs pull -X "" -I isaac_ros_visual_slam/test/test_cases/rosbags/
+    cd ${ISAAC_ROS_WS}/src/isaac_ros_common && \
+      ./scripts/run_dev.sh ${ISAAC_ROS_WS}
     ```
 
-4. Launch the Docker container using the `run_dev.sh` script:
-
-    ```bash
-    cd ~/workspaces/isaac_ros-dev/src/isaac_ros_common && \
-      ./scripts/run_dev.sh
-    ```
-
-5. Inside the container, build and source the workspace:
+4. \[Terminal 1\] Inside the container, build and source the workspace:
 
     ```bash
     cd /workspaces/isaac_ros-dev && \
@@ -139,35 +141,55 @@ This section describes the coordinate frames that are involved in the `VisualSla
       source install/setup.bash
     ```
 
-6. (Optional) Run tests to verify complete and correct installation:  
+    > (Optional) Run tests to verify complete and correct installation:  
+    >
+    >    ```bash
+    >    colcon test --executor sequential
+    >    ```
 
-    ```bash
-    colcon test --executor sequential
-    ```
-
-7. Run the following launch files in the current terminal:
+    Run the following launch files in the current terminal (Terminal 1):
 
     ```bash
     ros2 launch isaac_ros_visual_slam isaac_ros_visual_slam.launch.py
     ```
 
-8. In a second terminal inside the Docker container, prepare rviz to display the output:
+5. \[Terminal 2\] Attach another terminal to the running container for Rviz2
+
+    Attach another terminal to the running container for RViz2.
+
+    ```bash
+    cd ${ISAAC_ROS_WS}/src/isaac_ros_common && \
+      ./scripts/run_dev.sh ${ISAAC_ROS_WS}
+    ```
+
+    From this second terminal, run Rviz2 to display the output:
 
     ```bash
     source /workspaces/isaac_ros-dev/install/setup.bash && \
       rviz2 -d src/isaac_ros_visual_slam/isaac_ros_visual_slam/rviz/default.cfg.rviz 
     ```
 
-9. In an another terminal inside the Docker container, run the following ros bag file to start the demo:
+    > If you are SSH-ing in from a remote machine, the Rviz2 window should be forwarded to your remote machine.
+
+6. \[Terminal 3\] Attach the 3rd terminal to start the rosbag
+
+    ```bash
+    cd ${ISAAC_ROS_WS}/src/isaac_ros_common && \
+      ./scripts/run_dev.sh ${ISAAC_ROS_WS}
+    ```
+
+    Run the rosbag file to start the demo.
 
     ```bash
     source /workspaces/isaac_ros-dev/install/setup.bash && \
       ros2 bag play src/isaac_ros_visual_slam/isaac_ros_visual_slam/test/test_cases/rosbags/small_pol_test/
     ```
 
+7. Result:
+
     Rviz should start displaying the point clouds and poses like below:
 
-  <div align="center"><img src="resources/Rviz_quick_start.png" width="600px"/></div>  
+    <div align="center"><img src="resources/Rviz_quick_start.png" width="600px"/></div>  
 
 ## Next Steps
 
@@ -175,7 +197,10 @@ This section describes the coordinate frames that are involved in the `VisualSla
 
 To continue your exploration, check out the following suggested examples:
 
-- [Tutorial with Isaac Sim](docs/tutorial-isaac-sim.md#tutorial-with-isaac-sim)
+- <span id="validating-cuvslam">[Validating cuVSLAM on a Robot](docs/validating-cuvslam-setup.md)</span>
+- <span id="tutorial-isaac-sim">[Tutorial with Isaac Sim](docs/tutorial-isaac-sim.md)</span>
+- <span id="tutorial-realsense-imu">[Tutorial for Visual SLAM using a RealSense camera with integrated IMU](docs/tutorial-realsense.md)</span>
+- <span id="tutorial-jetson-orin-nano">[Get started quickly with Visual SLAM on Jetson Orin Nano Developer Kit](https://nvidia-ai-iot.github.io/jetson_isaac_ros_visual_slam_tutorial/)</span>
 
 ### Customize your Dev Environment
 
@@ -193,37 +218,43 @@ ros2 launch isaac_ros_visual_slam isaac_ros_visual_slam.launch.py
 
 #### ROS Parameters
 
-| ROS Parameter                   | Type                  | Default          | Description                                                                                                                                                                                                                                                                                 |
-| ------------------------------- | --------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `denoise_input_images`          | `bool`                | `false`          | If enabled, input images are denoised. It can be enabled when images are noisy because of low-light conditions.                                                                                                                                                                             |
-| `rectified_images`              | `bool`                | `true`           | Flag to mark if the incoming images are rectified or raw.                                                                                                                                                                                                                                   |
-| `enable_imu`                    | `bool`                | `false`          | If enabled, IMU data is used.                                                                                                                                                                                                                                                               |
-| `enable_debug_mode`             | `bool`                | `false`          | If enabled, a debug dump (image frames, timestamps, and camera info) is saved on to the disk at the path indicated by `debug_dump_path`                                                                                                                                                     |
-| `debug_dump_path`               | `std::string`         | `/tmp/elbrus`    | The path to the directory to store the debug dump data.                                                                                                                                                                                                                                     |
-| `input_base_frame`              | `std::string`         | `""`             | Name of the frame (baselink) to calculate transformation between the baselink and the left camera. Default is empty, which means the value of the `base_frame` will be used. If `input_base_frame` and `base_frame` are both empty, the left camera is assumed to be in the robot's center. |
-| `input_left_camera_frame`       | `std::string`         | `""`             | The name of the left camera frame. the default value is empty, which means the left camera is in the robot's center and `left_pose_right` will be calculated from CameraInfo.                                                                                                               |
-| `input_right_camera_frame`      | `std::string`         | `""`             | The name of the right camera frame. The default value is empty, which means left and right cameras have identity rotation and are horizontally aligned. `left_pose_right` will be calculated from CameraInfo.                                                                               |
-| `input_imu_frame`               | `std::string`         | `imu`            | Defines the name of the IMU frame used to calculate `left_camera_pose_imu`.                                                                                                                                                                                                                 |
-| `gravitational_force`           | `std::vector<double>` | `{0.0, 0, -9.8}` | The initial gravity vector defined in the odometry frame. If the IMU sensor is not parallel to the floor, update all the axes with appropriate values.                                                                                                                                      |
-| `publish_tf`                    | `bool`                | `true`           | If enabled, it will publish output frame hierarchy to TF tree.                                                                                                                                                                                                                              |
-| `map_frame`                     | `std::string`         | `map`            | The frame name associated with the map origin.                                                                                                                                                                                                                                              |
-| `odom_frame`                    | `std::string`         | `odom`           | The frame name associated with the odometry origin.                                                                                                                                                                                                                                         |
-| `base_frame`                    | `std::string`         | `base_link`      | The frame name associated with the robot.                                                                                                                                                                                                                                                   |
-| `enable_observations_view`      | `bool`                | `false`          | If enabled, 2D feature pointcloud will be available for visualization.                                                                                                                                                                                                                      |
-| `enable_landmarks_view`         | `bool`                | `false`          | If enabled, landmark pointcloud will be available for visualization.                                                                                                                                                                                                                        |
-| `enable_slam_visualization`     | `bool`                | `false`          | Main flag to enable or disable visualization.                                                                                                                                                                                                                                               |
-| `enable_localization_n_mapping` | `bool`                | `true`           | If enabled, SLAM mode is on. If diabled, only Visual Odometry is on.                                                                                                                                                                                                                        |
-| `path_max_size`                 | `int`                 | `1024`           | The maximum size of the buffer for pose trail visualization.                                                                                                                                                                                                                                |
-| `publish_odom_to_base_tf`       | `bool`                | `true`           | Enable tf broadcaster for odom_frame->base_frame transform.                                                                                                                                                                                                                                 |
-| `publish_map_to_odom_tf`        | `bool`                | `true`           | Enable tf broadcaster for map_frame->odom_frame transform.                                                                                                                                                                                                                                  |
-| `invert_odom_to_base_tf`        | `bool`                | `false`          | Invert the odom_frame->base_frame transform before broadcasting to the tf tree.                                                                                                                                                                                                             |
-| `invert_map_to_odom_tf`         | `bool`                | `false`          | Invert the map_frame->odom_frame transform before broadcasting  to the tf tree.                                                                                                                                                                                                             |
-| `map_frame`                     | `std::string`         | `map`            | String name for the map_frame.                                                                                                                                                                                                                                                              |
-| `odom_frame`                    | `std::string`         | `odom`           | String name for the odom_frame.                                                                                                                                                                                                                                                             |
-| `base_frame`                    | `std::string`         | `base_link`      | String name for the base_frame.                                                                                                                                                                                                                                                             |
-| `override_publishing_stamp`     | `bool`                | `false`          | Override timestamp received from the left image with the timetsamp from rclcpp::Clock.                                                                                                                                                                                                      |
-| `msg_filter_queue_size`         | `int`                 | `100`            | Image + Camera Info Synchronizer message filter queue size.                                                                                                                                                                                                                                 |
-| `image_qos`                     | `std::string`         | `SENSOR_DATA`    | QoS profile for the left and right image subscribers.                                                                                                                                                                                                                                       |
+| ROS Parameter                   | Type          | Default       | Description                                                                                                                                                                                                                                                                                 |
+| ------------------------------- | ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `denoise_input_images`          | `bool`        | `false`       | If enabled, input images are denoised. It can be enabled when images are noisy because of low-light conditions.                                                                                                                                                                             |
+| `rectified_images`              | `bool`        | `true`        | Flag to mark if the incoming images are rectified or raw.                                                                                                                                                                                                                                   |
+| `enable_imu_fusion`             | `bool`        | `false`       | If enabled, IMU data is used.                                                                                                                                                                                                                                                               |
+| `gyro_noise_density`            | `double`      | `0.000244`    | White noise parameter for gyroscope based on [IMU Noise Model](https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model).                                                                                                                                                                    |
+| `gyro_random_walk`              | `double`      | `0.000019393` | Random walk parameter for gyroscope based on [IMU Noise Model](https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model).                                                                                                                                                                    |
+| `accel_noise_density`           | `double`      | `0.001862`    | White noise parameter for accelerometer based on [IMU Noise Model](https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model).                                                                                                                                                                |
+| `accel_random_walk`             | `double`      | `0.003`       | Random walk parameter for accelerometer based on [IMU Noise Model](https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model).                                                                                                                                                                |
+| `calibration_frequency`         | `double`      | `200.0`       | IMU frequency used for generating noise model parameters.                                                                                                                                                                                                                                   |
+| `img_jitter_threshold_ms`       | `double`      | `33.33`       | Acceptable time delta between previous and current pair of image frames. If a pair of image frames exceeds the threshold, it might be an indication of frame drop from the source.                                                                                                          |
+| `enable_verbosity`              | `bool`        | `false`       | If enabled, prints logs from cuVSLAM library.                                                                                                                                                                                                                                               |
+| `force_planar_mode`             | `bool`        | `false`       | If enabled, slam poses will be modified such that the camera moves on a horizontal plane.                                                                                                                                                                                                   |
+| `enable_debug_mode`             | `bool`        | `false`       | If enabled, a debug dump (image frames, timestamps, and camera info) is saved on to the disk at the path indicated by `debug_dump_path`                                                                                                                                                     |
+| `debug_dump_path`               | `std::string` | `/tmp/elbrus` | The path to the directory to store the debug dump data.                                                                                                                                                                                                                                     |
+| `input_base_frame`              | `std::string` | `""`          | Name of the frame (baselink) to calculate transformation between the baselink and the left camera. Default is empty, which means the value of the `base_frame` will be used. If `input_base_frame` and `base_frame` are both empty, the left camera is assumed to be in the robot's center. |
+| `input_left_camera_frame`       | `std::string` | `""`          | The name of the left camera frame. the default value is empty, which means the left camera is in the robot's center and `left_pose_right` will be calculated from CameraInfo.                                                                                                               |
+| `input_right_camera_frame`      | `std::string` | `""`          | The name of the right camera frame. The default value is empty, which means left and right cameras have identity rotation and are horizontally aligned. `left_pose_right` will be calculated from CameraInfo.                                                                               |
+| `input_imu_frame`               | `std::string` | `imu`         | Defines the name of the IMU frame used to calculate `left_camera_pose_imu`.                                                                                                                                                                                                                 |
+| `map_frame`                     | `std::string` | `map`         | The frame name associated with the map origin.                                                                                                                                                                                                                                              |
+| `odom_frame`                    | `std::string` | `odom`        | The frame name associated with the odometry origin.                                                                                                                                                                                                                                         |
+| `base_frame`                    | `std::string` | `base_link`   | The frame name associated with the robot.                                                                                                                                                                                                                                                   |
+| `enable_observations_view`      | `bool`        | `false`       | If enabled, 2D feature pointcloud will be available for visualization.                                                                                                                                                                                                                      |
+| `enable_landmarks_view`         | `bool`        | `false`       | If enabled, landmark pointcloud will be available for visualization.                                                                                                                                                                                                                        |
+| `enable_slam_visualization`     | `bool`        | `false`       | Main flag to enable or disable visualization.                                                                                                                                                                                                                                               |
+| `enable_localization_n_mapping` | `bool`        | `true`        | If enabled, SLAM mode is on. If diabled, only Visual Odometry is on.                                                                                                                                                                                                                        |
+| `path_max_size`                 | `int`         | `1024`        | The maximum size of the buffer for pose trail visualization.                                                                                                                                                                                                                                |
+| `publish_odom_to_base_tf`       | `bool`        | `true`        | Enable tf broadcaster for odom_frame->base_frame transform.                                                                                                                                                                                                                                 |
+| `publish_map_to_odom_tf`        | `bool`        | `true`        | Enable tf broadcaster for map_frame->odom_frame transform.                                                                                                                                                                                                                                  |
+| `invert_odom_to_base_tf`        | `bool`        | `false`       | Invert the odom_frame->base_frame transform before broadcasting to the tf tree.                                                                                                                                                                                                             |
+| `invert_map_to_odom_tf`         | `bool`        | `false`       | Invert the map_frame->odom_frame transform before broadcasting  to the tf tree.                                                                                                                                                                                                             |
+| `map_frame`                     | `std::string` | `map`         | String name for the map_frame.                                                                                                                                                                                                                                                              |
+| `odom_frame`                    | `std::string` | `odom`        | String name for the odom_frame.                                                                                                                                                                                                                                                             |
+| `base_frame`                    | `std::string` | `base_link`   | String name for the base_frame.                                                                                                                                                                                                                                                             |
+| `override_publishing_stamp`     | `bool`        | `false`       | Override timestamp received from the left image with the timetsamp from rclcpp::Clock.                                                                                                                                                                                                      |
+| `msg_filter_queue_size`         | `int`         | `100`         | Image + Camera Info Synchronizer message filter queue size.                                                                                                                                                                                                                                 |
+| `image_qos`                     | `std::string` | `SENSOR_DATA` | QoS profile for the left and right image subscribers.                                                                                                                                                                                                                                       |
 
 #### ROS Topics Subscribed
 
@@ -269,23 +300,40 @@ For solutions to problems with Isaac ROS, please check [here](https://github.com
 
 ### Troubleshooting Suggestions
 
-- If RViz is not showing the poses, check the **Fixed Frame** value.
-- If you are seeing `Tracker is lost.` messages frequently, it could be caused by the following issues:
-  - Fast motion causing the motion blur in the frames.
-  - Low-lighting conditions.
-  - The wrong `camerainfo` is being published.
-- For better performance:
-  - Increase the capture framerate from the camera to yield a better tracking result.
-  - If input images are noisy, you can use the `denoise_input_images` flag in the node.
+1. If the target frames in rviz are being updated at a **lower rate** than the input image rate:
+   1. Check if the input image frame rate is equal to the value set in the launch file by opening a new terminal and running the command
+
+      ```bash
+      ros2 topic hz --window 100 <image_topic_name>
+      ```
+
+2. If RViz is not showing the poses, check the **Fixed Frame** value.
+3. If you are seeing `Visual tracking is lost.` messages frequently, it could be caused by the following issues:
+   1. Fast motion causing the motion blur in the frames
+   2. Low-lighting conditions.
+   3. The wrong `camerainfo` is being published.
+4. For better performance:
+   1. Increase the capture framerate from the camera to yield a better tracking result.
+   2. If input images are noisy, you can use the `denoise_input_images` flag in the node.
+5. For RealSense cameras-
+   1. The firmware of the RealSense camera is [5.14.0 or newer](https://dev.intelrealsense.com/docs/firmware-releases). Check the RealSense [firmware-update-tool](https://dev.intelrealsense.com/docs/firmware-update-tool) page for details on how to check the version and update the camera firmware.
+   2. You are using the [4.51.1 tagged release](https://github.com/IntelRealSense/realsense-ros/releases/tag/4.51.1) for the [realsense-ros package](https://github.com/IntelRealSense/realsense-ros/commit/2a65533ee7431bdc05fe5744798efc7f5713f866).
+   3. You are using the parameters set in the [RealSense tutorial launch file](./isaac_ros_visual_slam/launch/isaac_ros_visual_slam_realsense.launch.py)
+   4. If the pose estimate frames in RViz is **drifting** from actual real-world poses and you see white dots on nearby objects(refer to the screenshot below), this means that the emitter of the RealSense camera is on and it needs to be [turned off](./isaac_ros_visual_slam/launch/isaac_ros_visual_slam_realsense.launch.py#L35).
+   5. Left and right images being published are not compressed or encoded. Isaac ROS Visual Slam expects raw images.
+
+<div align="center"><img src="resources/realsense_emitter.png" width="400px"/></div>
 
 ## Updates
 
-| Date       | Changes                                    |
-| ---------- | ------------------------------------------ |
-| 2022-10-19 | Updated OSS licensing                      |
-| 2022-08-31 | Update to be compatible with JetPack 5.0.2 |
-| 2022-06-30 | Support for ROS2 Humble                    |
-| 2022-03-17 | Documentation update for new features      |
-| 2022-03-11 | Renamed to isaac_ros_visual_slam           |
-| 2021-11-15 | Isaac Sim HIL documentation update         |
-| 2021-10-20 | Initial release                            |
+| Date       | Changes                                            |
+| ---------- | -------------------------------------------------- |
+| 2023-05-25 | cuVSLAM 11 with improved quality                   |
+| 2023-04-05 | Update Elbrus library and performance improvements |
+| 2022-10-19 | Updated OSS licensing                              |
+| 2022-08-31 | Update to be compatible with JetPack 5.0.2         |
+| 2022-06-30 | Support for ROS 2 Humble                           |
+| 2022-03-17 | Documentation update for new features              |
+| 2022-03-11 | Renamed to isaac_ros_visual_slam                   |
+| 2021-11-15 | Isaac Sim HIL documentation update                 |
+| 2021-10-20 | Initial release                                    |

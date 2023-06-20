@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: NVIDIA CORPORATION & AFFILIATES
-# Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ def generate_launch_description():
                 'enable_color': True,
                 'enable_depth': True,
                 'depth_module.emitter_enabled': 0,
+<<<<<<< HEAD
                 'unite_imu_method':1,
                 'enable_sync':True,
                 'pointcloud.enable':False,
@@ -41,6 +42,15 @@ def generate_launch_description():
                 'depth_module.profile':'640x360x90',
                 'rgb_camera.profile': '1280x720x30'
         }],
+=======
+                'depth_module.profile': '640x360x90',
+                'enable_gyro': True,
+                'enable_accel': True,
+                'gyro_fps': 200,
+                'accel_fps': 200,
+                'unite_imu_method': 2
+        }]
+>>>>>>> 95c108004253d94da0a2d976bc5d8fc061070fde
     )
 
     visual_slam_node = ComposableNode(
@@ -48,6 +58,7 @@ def generate_launch_description():
         package='isaac_ros_visual_slam',
         plugin='isaac_ros::visual_slam::VisualSlamNode',
         parameters=[{
+<<<<<<< HEAD
                 'enable_rectified_pose': True,
                 'denoise_input_images': True,
                 'rectified_images': True,
@@ -69,11 +80,32 @@ def generate_launch_description():
                 'publish_map_to_odom_tf': True,
                 'input_imu_frame' : 'camera_imu_frame',
 
+=======
+                    'denoise_input_images': False,
+                    'rectified_images': True,
+                    'enable_debug_mode': False,
+                    'debug_dump_path': '/tmp/cuvslam',
+                    'enable_slam_visualization': True,
+                    'enable_landmarks_view': True,
+                    'enable_observations_view': True,
+                    'map_frame': 'map',
+                    'odom_frame': 'odom',
+                    'base_frame': 'camera_link',
+                    'input_imu_frame': 'camera_gyro_optical_frame',
+                    'enable_imu_fusion': True,
+                    'gyro_noise_density': 0.000244,
+                    'gyro_random_walk': 0.000019393,
+                    'accel_noise_density': 0.001862,
+                    'accel_random_walk': 0.003,
+                    'calibration_frequency': 200.0,
+                    'img_jitter_threshold_ms': 22.00
+>>>>>>> 95c108004253d94da0a2d976bc5d8fc061070fde
                     }],
         remappings=[('stereo_camera/left/image', 'camera/infra1/image_rect_raw'),
                     ('stereo_camera/left/camera_info', 'camera/infra1/camera_info'),
                     ('stereo_camera/right/image', 'camera/infra2/image_rect_raw'),
-                    ('stereo_camera/right/camera_info', 'camera/infra2/camera_info')]
+                    ('stereo_camera/right/camera_info', 'camera/infra2/camera_info'),
+                    ('visual_slam/imu', 'camera/imu')]
     )
 
     visual_slam_launch_container = ComposableNodeContainer(
