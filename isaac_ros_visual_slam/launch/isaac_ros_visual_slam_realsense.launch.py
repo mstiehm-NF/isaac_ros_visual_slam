@@ -30,19 +30,9 @@ def generate_launch_description():
         parameters=[{
                 'enable_infra1': True,
                 'enable_infra2': True,
-                'enable_color': True,
-                'enable_depth': True,
+                'enable_color': False,
+                'enable_depth': False,
                 'depth_module.emitter_enabled': 0,
-<<<<<<< HEAD
-                'unite_imu_method':1,
-                'enable_sync':True,
-                'pointcloud.enable':False,
-                'align_depth.enable': True,
-                'pointcloud.ordered_pc': False,
-                'depth_module.profile':'640x360x90',
-                'rgb_camera.profile': '1280x720x30'
-        }],
-=======
                 'depth_module.profile': '640x360x90',
                 'enable_gyro': True,
                 'enable_accel': True,
@@ -50,7 +40,6 @@ def generate_launch_description():
                 'accel_fps': 200,
                 'unite_imu_method': 2
         }]
->>>>>>> 95c108004253d94da0a2d976bc5d8fc061070fde
     )
 
     visual_slam_node = ComposableNode(
@@ -58,29 +47,6 @@ def generate_launch_description():
         package='isaac_ros_visual_slam',
         plugin='isaac_ros::visual_slam::VisualSlamNode',
         parameters=[{
-<<<<<<< HEAD
-                'enable_rectified_pose': True,
-                'denoise_input_images': True,
-                'rectified_images': True,
-                'enable_debug_mode': False,
-                'debug_dump_path': '/tmp/elbrus',
-                'enable_slam_visualization': True,
-                'enable_landmarks_view': False,
-                'enable_observations_view': False,
-                'enable_localization_n_mapping': True,
-                'enable_imu': True,
-                'map_frame': 'map',
-                'odom_frame': 'odom',
-                'base_frame': 'camera_link',
-                'input_left_camera_frame': '',
-                'input_right_camera_frame': '',
-                'path_max_size': 5000,
-                'msg_filter_queue_size': 5000,
-                'publish_odom_to_base_tf': True,
-                'publish_map_to_odom_tf': True,
-                'input_imu_frame' : 'camera_imu_frame',
-
-=======
                     'denoise_input_images': False,
                     'rectified_images': True,
                     'enable_debug_mode': False,
@@ -99,7 +65,6 @@ def generate_launch_description():
                     'accel_random_walk': 0.003,
                     'calibration_frequency': 200.0,
                     'img_jitter_threshold_ms': 22.00
->>>>>>> 95c108004253d94da0a2d976bc5d8fc061070fde
                     }],
         remappings=[('stereo_camera/left/image', 'camera/infra1/image_rect_raw'),
                     ('stereo_camera/left/camera_info', 'camera/infra1/camera_info'),
