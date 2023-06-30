@@ -30,8 +30,8 @@ def generate_launch_description():
         parameters=[{
                 'enable_infra1': True,
                 'enable_infra2': True,
-                'enable_color': False,
-                'enable_depth': False,
+                'enable_color': True,
+                'enable_depth': True,
                 'depth_module.emitter_enabled': 0,
                 'depth_module.profile': '640x360x90',
                 'rgb_camera.profile': '1280x720x30',
@@ -65,7 +65,8 @@ def generate_launch_description():
                     'accel_noise_density': 0.001862,
                     'accel_random_walk': 0.003,
                     'calibration_frequency': 200.0,
-                    'img_jitter_threshold_ms': 22.00
+                    'img_jitter_threshold_ms': 22.00,
+                    'path_max_size': 10000
                     }],
         remappings=[('stereo_camera/left/image', 'camera/infra1/image_rect_raw'),
                     ('stereo_camera/left/camera_info', 'camera/infra1/camera_info'),
