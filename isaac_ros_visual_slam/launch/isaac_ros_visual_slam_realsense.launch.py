@@ -18,13 +18,30 @@
 import launch
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    launch_args = [
+        DeclareLaunchArgument(
+            'namespace',
+            default_value='',
+            description='Namespace for the nodes'
+        ),
+        ExecuteProcess(
+            cmd=['echo', 'Namespace is:', LaunchConfiguration('namespace')],
+            output='screen',
+        ),
+    ]
+
+    # Namespace
+    namespace = LaunchConfiguration('namespace')
+
     """Launch file which brings up visual slam node configured for RealSense."""
     realsense_camera_node = Node(
         name='camera',
-        namespace='camera',
+        namespace=namespace,
         package='realsense2_camera',
         executable='realsense2_camera_node',
         parameters=[{
@@ -45,6 +62,7 @@ def generate_launch_description():
 
     visual_slam_node = ComposableNode(
         name='visual_slam_node',
+        namespace=namespace,
         package='isaac_ros_visual_slam',
         plugin='nvidia::isaac_ros::visual_slam::VisualSlamNode',
         parameters=[{
@@ -77,7 +95,7 @@ def generate_launch_description():
 
     visual_slam_launch_container = ComposableNodeContainer(
         name='visual_slam_launch_container',
-        namespace='',
+        namespace=namespace,
         package='rclcpp_components',
         executable='component_container',
         composable_node_descriptions=[
@@ -85,5 +103,5 @@ def generate_launch_description():
         ],
         output='screen'
     )
-
-    return launch.LaunchDescription([visual_slam_launch_container, realsense_camera_node])
+    final_launch_description = launch_args + [visual_slam_launch_container, realsense_camera_node]
+    return launch.LaunchDescription(final_launch_description)
