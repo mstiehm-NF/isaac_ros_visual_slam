@@ -1,33 +1,126 @@
+# /oak:
+#   ros__parameters:
+#     camera:
+#       i_enable_imu: true
+#       i_enable_ir: false
+#       i_pipeline_type: depth
+#       i_publish_tf_from_calibration: true
+#     stereo:
+#       i_publish_topic: false
+#       i_reverse_stereo_socket_order: true
+#       i_publish_synced_rect_pair: true
+#       i_update_ros_base_time_on_ros_msg: true
+#     left:
+#       i_resolution: '400'
+#       i_fps: 30.0
+#     right:
+#       i_resolution: '400'
+#       i_fps: 30.0
+
 /oak:
   ros__parameters:
     camera:
       i_calibration_dump: true
       i_enable_imu: true
-      i_enable_ir: true
-      i_pipeline_type: depth
+      i_enable_ir: false
+      i_pipeline_type: RGBD
       i_publish_tf_from_calibration: true
       i_tf_imu_from_descr: 'true'
       i_usb_speed: SUPER_PLUS
+      i_nn_type: none
     stereo:
       i_publish_topic: true
       i_reverse_stereo_socket_order: true
       i_publish_synced_rect_pair: true
-      i_publish_left_rect: true
-      i_publish_right_rect: true
       i_update_ros_base_time_on_ros_msg: false
       i_align_depth: true
-      i_resolution: '400P'
+      i_resolution: '720P'
+      i_left_rect_low_bandwidth: true
+      i_left_rect_low_bandwidth_quality: 50
+      i_right_rect_low_bandwidth: true
+      i_right_rect_low_bandwidth_quality: 50
+      i_low_bandwidth: true
+      i_low_bandwidth_quality: 50
+    imu:
+      i_acc_cov: 0.0
+      i_acc_freq: 100
+      i_batch_report_threshold: 5
+      i_enable_rotation: false
+      i_get_base_device_timestamp: false
+      i_gyro_cov: 0.0
+      i_gyro_freq: 100
+      i_mag_cov: 0.0
+      i_max_batch_reports: 10
+      i_message_type: IMU
+      i_rot_cov: 0.0
+      i_rot_freq: 0
+      i_sync_method: LINEAR_INTERPOLATE_ACCEL
+      i_update_ros_base_time_on_ros_msg: false
     left:
       i_resolution: '400P'
-      i_fps: 120.0
+      i_fps: 60.0
+      i_low_bandwidth: true
+      i_low_bandwidth_quality: 50
     right:
       i_resolution: '400P'
-      i_fps: 120.0
+      i_fps: 60.0
+      i_low_bandwidth: true
+      i_low_bandwidth_quality: 50
     rgb:
       i_resolution: '1080P'
+      i_isp_den: 3
+      i_isp_num: 2
+      i_output_isp: true
       i_fps: 30.0
+      i_low_bandwidth: true
+      i_low_bandwidth_quality: 50
       i_publish_topic: true
     use_sim_time: false
+
+# /oak:
+#   ros__parameters:
+#     camera:
+#       i_calibration_dump: true
+#       i_enable_imu: true
+#       i_enable_ir: true
+#       i_pipeline_type: RGBD
+#       i_publish_tf_from_calibration: true
+#       i_tf_imu_from_descr: 'true'
+#       i_usb_speed: SUPER_PLUS
+#       i_nn_type: none
+#     stereo:
+#       i_publish_topic: true
+#       i_reverse_stereo_socket_order: true
+#       i_publish_synced_rect_pair: true
+#       i_publish_left_rect: true
+#       i_publish_right_rect: true
+#       i_update_ros_base_time_on_ros_msg: false
+#       i_align_depth: true
+#       i_resolution: '400P'
+#       i_low_bandwidth: true
+#       i_low_bandwidth_quality: 10
+#     left:
+#       i_height: 400
+#       i_width: 640
+#       i_fps: 117.0
+#       i_low_bandwidth: true
+#       i_low_bandwidth_quality: 10
+#     right:
+#       i_height: 400
+#       i_width: 640
+#       i_fps: 117.0
+#       i_low_bandwidth: true
+#       i_low_bandwidth_quality: 10
+#     rgb:
+#       i_resolution: '1080P'
+#       i_isp_den: 3
+#       i_isp_num: 2
+#       i_output_isp: true
+#       i_fps: 30.0
+#       i_low_bandwidth: true
+#       i_low_bandwidth_quality: 10
+#       i_publish_topic: true
+#     use_sim_time: false
 
 # /oak:
 #   ros__parameters:
@@ -127,11 +220,11 @@
 #       i_interleaved: false
 #       i_isp_den: 39
 #       i_isp_num: 10
+#       i_output_isp: true
 #       i_keep_preview_aspect_ratio: true
 #       i_low_bandwidth: false
 #       i_low_bandwidth_quality: 50
 #       i_max_q_size: 30
-#       i_output_isp: true
 #       i_preview_height: 300
 #       i_preview_size: 300
 #       i_preview_width: 300

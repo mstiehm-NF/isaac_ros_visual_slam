@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import launch
-import launch
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
@@ -72,7 +71,7 @@ def generate_launch_description():
                     'denoise_input_images': False,
                     'rectified_images': True,
                     'enable_slam_visualization': True,
-                    'enable_observations_view': True,
+                    'enable_observations_view': False,
                     'enable_landmarks_view': True,
                     'enable_imu_fusion': True, 
                     'enable_debug_mode': False,
@@ -88,8 +87,9 @@ def generate_launch_description():
                     'accel_noise_density': 4.072394996046438 ,
                     'accel_random_walk': 1.9007919574432275 ,
                     'calibration_frequency': 100.0,
-                    'img_jitter_threshold_ms': 100.00,
-                    'path_max_size': 1000
+                    'img_jitter_threshold_ms': 22.00,
+                    'path_max_size': 100000,
+                    'force_planar_mode': True,
                     }]
     )
 

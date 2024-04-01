@@ -72,7 +72,7 @@ def generate_launch_description():
                     'debug_dump_path': '/tmp/cuvslam',
                     'enable_slam_visualization': True,
                     'enable_landmarks_view': True,
-                    'enable_observations_view': True,
+                    'enable_observations_view': False,
                     'map_frame': 'map',
                     'odom_frame': 'odom',
                     'base_frame': 'camera_link',
@@ -84,13 +84,14 @@ def generate_launch_description():
                     'accel_random_walk': 0.003,
                     'calibration_frequency': 200.0,
                     'img_jitter_threshold_ms': 22.00,
-                    'path_max_size': 10000
+                    'path_max_size': 100000,
+                    'force_plana_mode': True,
                     }],
-        remappings=[('stereo_camera/left/image', 'camera/infra1/image_rect_raw'),
-                    ('stereo_camera/left/camera_info', 'camera/infra1/camera_info'),
-                    ('stereo_camera/right/image', 'camera/infra2/image_rect_raw'),
-                    ('stereo_camera/right/camera_info', 'camera/infra2/camera_info'),
-                    ('visual_slam/imu', 'camera/imu')]
+        remappings=[('stereo_camera/left/image', 'infra1/image_rect_raw'),
+                    ('stereo_camera/left/camera_info', 'infra1/camera_info'),
+                    ('stereo_camera/right/image', 'infra2/image_rect_raw'),
+                    ('stereo_camera/right/camera_info', 'infra2/camera_info'),
+                    ('visual_slam/imu', 'imu')]
     )
 
     visual_slam_launch_container = ComposableNodeContainer(
