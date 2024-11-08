@@ -38,6 +38,15 @@ def generate_launch_description():
     # Namespace
     namespace = LaunchConfiguration('namespace')
 
+    #Static transform publisher
+    static_tf = Node(
+        package='tf2_ros',
+        namespace=namespace,
+        executable='static_transform_publisher',
+        ## Arguments: x, y, z, qx, qy, qz, qw, frame_id, child_frame_id
+        arguments=['0', '0', '1.15', '0', '0', '0', 'base_link', 'camera_link'],
+        output='screen')   
+
     """Launch file which brings up visual slam node configured for RealSense."""
     realsense_camera_node = Node(
         name='camera',
@@ -84,7 +93,7 @@ def generate_launch_description():
                     'accel_noise_density': 0.001862,
                     'accel_random_walk': 0.003,
                     'calibration_frequency': 200.0,
-                    'img_jitter_threshold_ms': 30.00,
+                    'img_jitter_threshold_ms': 25.00,
                     'path_max_size': 1000000,
                     'enable_planar_mode': True,
                     }],
@@ -105,5 +114,5 @@ def generate_launch_description():
         ],
         output='screen'
     )
-    final_launch_description = launch_args + [visual_slam_launch_container, realsense_camera_node]
+    final_launch_description = launch_args + [visual_slam_launch_container, static_tf, realsense_camera_node]
     return launch.LaunchDescription(final_launch_description)
