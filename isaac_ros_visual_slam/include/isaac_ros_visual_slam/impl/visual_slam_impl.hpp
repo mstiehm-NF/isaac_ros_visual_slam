@@ -167,7 +167,7 @@ struct VisualSlamNode::VisualSlamImpl
   // Publisher for tf2.
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_publisher{nullptr};
 
-  // Publisher for static tf2 tranform.
+  // Publisher for static tf2 transform.
   std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_publisher{nullptr};
 
   limited_vector<PoseStampedType> vo_path;
@@ -196,7 +196,7 @@ struct VisualSlamNode::VisualSlamImpl
   // Velocity cache. For velocity covariance calculation.
   VelocityCache velocity_cache;
 
-  // Container to calulate execution time statictics.
+  // Container to calculate execution time statistics.
   limited_vector<double> track_execution_times;
 
   // Container to store delta between camera frames timestamp.
@@ -204,6 +204,9 @@ struct VisualSlamNode::VisualSlamImpl
 
   // Last timestamp of the image message in nanoseconds
   int64_t last_img_ts;
+
+  // Previous pose for velocity calculation
+  tf2::Transform previous_pose_;
 
   // Data structure to interleave imu and pair of image messages
   MessageStreamSequencer<ImuType::ConstSharedPtr, std::pair<ImageType::ConstSharedPtr,

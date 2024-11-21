@@ -14,15 +14,28 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-
+import os
+import yaml
 import launch
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 
+def load_camera_pose(file_path):
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+    return data
 
 def generate_launch_description():
+
+    # Load camera pose from YAML file
+    camera_pose_file = '/usr/config/camera_pose.yaml'
+    camera_pose = load_camera_pose(camera_pose_file)
+
+    x, y, z = camera_pose['translation']['x'], camera_pose['translation']['y'], camera_pose['translation']['z']
+    roll, pitch, yaw = camera_pose['rotation']['roll'], camera_pose['rotation']['pitch'], camera_pose['rotation']['yaw']
+
     launch_args = [
         DeclareLaunchArgument(
             'namespace',
@@ -38,14 +51,13 @@ def generate_launch_description():
     # Namespace
     namespace = LaunchConfiguration('namespace')
 
-    #Static transform publisher
+     # Static transform publisher
     static_tf = Node(
         package='tf2_ros',
-        namespace=namespace,
         executable='static_transform_publisher',
-        ## Arguments: x, y, z, qx, qy, qz, qw, frame_id, child_frame_id
-        arguments=['0', '0', '1.15', '0', '0', '0', 'base_link', 'camera_link'],
-        output='screen')   
+        ## Arguments: x, y, z, r, p, y, frame_id, child_frame_id
+        arguments=[str(x), str(y), str(z), str(roll), str(pitch), str(yaw), 'base_link', 'camera_link'],
+        output='screen') 
 
     """Launch file which brings up visual slam node configured for RealSense."""
     realsense_camera_node = Node(
@@ -65,7 +77,7 @@ def generate_launch_description():
                 'enable_gyro': True,
                 'enable_accel': True,
                 'gyro_fps': 200,
-                'accel_fps': 200,
+                'accel_fps': 250,
                 'unite_imu_method': 2
         }]
     )
@@ -85,7 +97,7 @@ def generate_launch_description():
                     'enable_observations_view': False,
                     'map_frame': 'map',
                     'odom_frame': 'odom',
-                    'base_frame': 'camera_link',
+                    'base_frame': 'base_link',
                     'input_imu_frame': 'camera_gyro_optical_frame',
                     'enable_imu_fusion': True,
                     'gyro_noise_density': 0.000244,
