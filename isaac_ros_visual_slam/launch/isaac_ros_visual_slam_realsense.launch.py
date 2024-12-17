@@ -43,8 +43,8 @@ def generate_launch_description():
         package='tf2_ros',
         namespace=namespace,
         executable='static_transform_publisher',
-        ## Arguments: x, y, z, qx, qy, qz, qw, frame_id, child_frame_id
-        arguments=['0', '0', '1.15', '0', '0', '0', 'base_link', 'camera_link'],
+        ## Arguments: x, y, z, roll, pitch, yaw frame_id, child_frame_id
+        arguments=['1.870', '0', '0.602496723947049', '0.0030715722047507388', '-0.10764757447697915', '0', 'base_link', 'camera_link'],
         output='screen')   
 
     """Launch file which brings up visual slam node configured for RealSense."""
@@ -85,7 +85,7 @@ def generate_launch_description():
                     'enable_observations_view': False,
                     'map_frame': 'map',
                     'odom_frame': 'odom',
-                    'base_frame': 'camera_link',
+                    'base_frame': 'base_link',
                     'input_imu_frame': 'camera_gyro_optical_frame',
                     'enable_imu_fusion': True,
                     'gyro_noise_density': 0.000244,
@@ -94,7 +94,7 @@ def generate_launch_description():
                     'accel_random_walk': 0.003,
                     'calibration_frequency': 200.0,
                     'img_jitter_threshold_ms': 25.00,
-                    'path_max_size': 1000000,
+                    'path_max_size': 10000,
                     'enable_planar_mode': True,
                     }],
         remappings=[('stereo_camera/left/image', 'infra1/image_rect_raw'),
