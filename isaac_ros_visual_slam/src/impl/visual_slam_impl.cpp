@@ -827,10 +827,47 @@ void VisualSlamNode::VisualSlamImpl::TrackAndGetPose(
     }
 
     // Change of basis vectors for smooth pose
-    const tf2::Transform ros_vo_pose{ChangeBasis(canonical_pose_cuvslam, cuvslam_vo_pose)};
+    tf2::Transform ros_vo_pose{ChangeBasis(canonical_pose_cuvslam, cuvslam_vo_pose)};
     // Change of basis vectors for rectified pose
     tf2::Transform ros_slam_pose{ChangeBasis(canonical_pose_cuvslam, cuvslam_slam_pose)};
 
+    // Apply planar constraints if enabled
+    if (node.force_planar_mode_) {
+      // Flatten VO pose
+      {
+        // Make a local copy of origin so we can modify it
+        tf2::Vector3 origin = ros_vo_pose.getOrigin();
+        origin.setZ(0.0);
+        ros_vo_pose.setOrigin(origin);
+
+        tf2::Matrix3x3 rot(ros_vo_pose.getRotation());
+        double roll, pitch, yaw;
+        rot.getRPY(roll, pitch, yaw);
+        // Force roll/pitch to zero
+        roll = 0.0;
+        pitch = 0.0;
+        tf2::Quaternion q;
+        q.setRPY(roll, pitch, yaw);
+        ros_vo_pose.setRotation(q);
+      }
+
+      // Flatten SLAM pose
+      {
+        tf2::Vector3 origin = ros_slam_pose.getOrigin();
+        origin.setZ(0.0);
+        ros_slam_pose.setOrigin(origin);
+
+        tf2::Matrix3x3 rot(ros_slam_pose.getRotation());
+        double roll, pitch, yaw;
+        rot.getRPY(roll, pitch, yaw);
+        roll = 0.0;
+        pitch = 0.0;
+        tf2::Quaternion q;
+        q.setRPY(roll, pitch, yaw);
+        ros_slam_pose.setRotation(q);
+      }
+    }
+    
     const tf2::Transform odom_pose_base_link = initial_odom_pose_left * ros_vo_pose *
       base_link_pose_left.inverse();
     const tf2::Transform map_pose_base_link = initial_map_pose_left * ros_slam_pose *
