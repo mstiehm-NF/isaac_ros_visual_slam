@@ -77,7 +77,7 @@ def generate_launch_description():
                 'enable_gyro': True,
                 'enable_accel': True,
                 'gyro_fps': 200,
-                'accel_fps': 250,
+                'accel_fps': 200,
                 'unite_imu_method': 2
         }]
     )
